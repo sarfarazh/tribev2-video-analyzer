@@ -8,7 +8,7 @@ echo "=== Installing tribev2 (without torch dependency override) ==="
 pip install --no-deps "tribev2[plotting] @ git+https://github.com/facebookresearch/tribev2.git"
 
 echo "=== Installing remaining dependencies ==="
-pip install gradio>=4.0 openai>=1.0 numpy pandas matplotlib "imageio[ffmpeg]"
+pip install gradio>=4.0 openai>=1.0 numpy pandas matplotlib "imageio[ffmpeg]" weasyprint Pillow
 
 echo "=== Installing tribev2 sub-dependencies (excluding torch/torchvision) ==="
 pip install neuralset neuraltrain x_transformers einops mne mne_bids nilearn pyvista nibabel \

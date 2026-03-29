@@ -1,6 +1,7 @@
-"""Brain heatmap image and GIF generation."""
+"""Brain heatmap image, GIF, and MP4 generation."""
 
 import io
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -44,6 +45,22 @@ def render_single_timestep(
 
     image = iio.imread(buf)
     return image
+
+
+def _normalize_frames(frames: list[np.ndarray]) -> list[np.ndarray]:
+    """Resize all frames to match the first frame's dimensions."""
+    if not frames:
+        return frames
+    target_shape = frames[0].shape
+    resized = []
+    for frame in frames:
+        if frame.shape != target_shape:
+            from PIL import Image
+            img = Image.fromarray(frame)
+            img = img.resize((target_shape[1], target_shape[0]), Image.LANCZOS)
+            frame = np.array(img)
+        resized.append(frame)
+    return resized
 
 
 def generate_interval_heatmaps(
@@ -150,7 +167,7 @@ def generate_segment_gif(
     segments: list,
     time_offset: float,
     output_path: Path | None = None,
-    fps: int = 2,
+    fps: int = 1,
 ) -> str:
     """Generate an animated GIF of brain activity for a video segment.
 
@@ -176,23 +193,110 @@ def generate_segment_gif(
         frame = render_single_timestep(plotter, preds, segments, t)
         frames.append(frame)
 
-    # Resize all frames to match the first frame's dimensions
-    target_shape = frames[0].shape
-    resized = []
-    for frame in frames:
-        if frame.shape != target_shape:
-            from PIL import Image
-            img = Image.fromarray(frame)
-            img = img.resize((target_shape[1], target_shape[0]), Image.LANCZOS)
-            frame = np.array(img)
-        resized.append(frame)
+    frames = _normalize_frames(frames)
 
     iio.imwrite(
         output_path,
-        resized,
+        frames,
         extension=".gif",
         duration=int(1000 / fps),
         loop=0,
     )
+
+    return str(output_path)
+
+
+def generate_segment_mp4(
+    plotter: PlotBrain,
+    preds: np.ndarray,
+    segments: list,
+    segment_video_path: str | Path,
+    time_offset: float,
+    output_path: Path | None = None,
+) -> str:
+    """Generate an MP4 of brain activity with original audio for a video segment.
+
+    Each brain heatmap frame is held for 30 frames (1 second at 30fps),
+    and the original audio from the segment is muxed in.
+
+    Args:
+        plotter: PlotBrain instance.
+        preds: Predictions for one video segment (n_timesteps, n_vertices).
+        segments: Segment objects for this video segment.
+        segment_video_path: Path to the original video segment (for audio extraction).
+        time_offset: Start time in the original video.
+        output_path: Where to save the MP4. Uses temp file if None.
+
+    Returns:
+        Path to the generated MP4 file.
+    """
+    if output_path is None:
+        tmp = tempfile.NamedTemporaryFile(
+            suffix=".mp4", prefix="tribe_video_", delete=False,
+        )
+        output_path = Path(tmp.name)
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="tribe_mp4_frames_"))
+
+    # Render brain heatmap frames
+    frames = []
+    for t in range(preds.shape[0]):
+        frame = render_single_timestep(plotter, preds, segments, t)
+        frames.append(frame)
+
+    frames = _normalize_frames(frames)
+
+    # Write each frame 30 times (30fps, 1 brain frame per second)
+    frame_idx = 0
+    for t, frame in enumerate(frames):
+        for dup in range(30):
+            frame_path = tmp_dir / f"frame_{frame_idx:06d}.png"
+            iio.imwrite(frame_path, frame)
+            frame_idx += 1
+
+    # Extract audio from original segment
+    audio_path = tmp_dir / "audio.aac"
+    subprocess.run(
+        [
+            "ffmpeg", "-i", str(segment_video_path),
+            "-vn", "-acodec", "aac", "-y", str(audio_path),
+        ],
+        capture_output=True,
+    )
+    has_audio = audio_path.exists() and audio_path.stat().st_size > 0
+
+    # Encode frames to MP4, mux with audio if available
+    frames_pattern = str(tmp_dir / "frame_%06d.png")
+    video_only = tmp_dir / "video_only.mp4"
+
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-framerate", "30",
+            "-i", frames_pattern,
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-y", str(video_only),
+        ],
+        capture_output=True, check=True,
+    )
+
+    if has_audio:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-i", str(video_only),
+                "-i", str(audio_path),
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-shortest",
+                "-y", str(output_path),
+            ],
+            capture_output=True, check=True,
+        )
+    else:
+        # No audio — just copy video
+        import shutil
+        shutil.copy2(video_only, output_path)
 
     return str(output_path)
