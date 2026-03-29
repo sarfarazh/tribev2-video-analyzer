@@ -1,0 +1,7 @@
+tribev2[plotting] @ git+https://github.com/facebookresearch/tribev2.git
+gradio>=4.0
+openai>=1.0
+numpy
+pandas
+matplotlib
+imageio[ffmpeg]

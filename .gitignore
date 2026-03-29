@@ -1,0 +1,32 @@
+# Docs (not committed)
+docs/
+
+# Cache
+cache/
+__pycache__/
+*.pyc
+
+# Temp files
+tmp/
+*.tmp
+
+# Environment
+.env
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Outputs
+outputs/
+*.gif
+*.png
+*.html
+*.json
+!requirements.txt
