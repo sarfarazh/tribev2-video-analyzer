@@ -142,7 +142,7 @@ def generate_report(
             "type": "text",
             "text": (
                 context_prefix
-                f"```json\n{json.dumps(summary, indent=2)}\n```\n\n"
+                + f"```json\n{json.dumps(summary, indent=2)}\n```\n\n"
                 "The following images show brain surface heatmaps at 5-second intervals "
                 "and at peak/drop moments. Warmer colors (red/yellow) = stronger activation."
             ),
