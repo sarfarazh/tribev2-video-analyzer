@@ -274,6 +274,7 @@ def generate_segment_mp4(
             "ffmpeg",
             "-framerate", "30",
             "-i", frames_pattern,
+            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
             "-c:v", "libx264",
             "-pix_fmt", "yuv420p",
             "-y", str(video_only),
