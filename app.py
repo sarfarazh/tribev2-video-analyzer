@@ -1,5 +1,13 @@
 """TRIBE Analyzer — Gradio app with Script, Voiceover, and Video tabs."""
 
+import os
+
+# Must be set before any HuggingFace imports — RunPod sets this to 1
+# but hf_transfer is not installed, causing ImportError during model download.
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
+os.environ["PYVISTA_OFF_SCREEN"] = "true"
+os.environ["MESA_GL_VERSION_OVERRIDE"] = "4.5"
+
 import json
 import logging
 import tempfile
