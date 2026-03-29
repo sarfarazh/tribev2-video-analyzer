@@ -3,6 +3,7 @@
 import base64
 import json
 import logging
+import re
 from pathlib import Path
 
 from openai import OpenAI
@@ -28,38 +29,72 @@ The 7 brain networks measured are:
 Write your report for a content creator who has NO neuroscience background. Your goal is to help them \
 understand what their video does to viewers' brains and how to make better content.
 
-Structure your report as:
+IMPORTANT FORMATTING RULES:
+- Use proper markdown: **bold** for emphasis, bullet lists with `-`, numbered lists with `1.`
+- Keep it scannable — use short paragraphs, not walls of text
+- No emojis in headings
+- Always reference specific timestamps (e.g., "at 0:12")
+- Use plain language. If you must use a brain term, explain it in parentheses.
+- Be honest about limitations — this is a predictive model, not a real brain scan.
+
+Structure your report EXACTLY as follows:
 
 ## Executive Summary
-One paragraph: overall cognitive impact of this video. What does it primarily engage?
 
-## Timeline Analysis
-Walk through the video second-by-second (grouped by 20s segments). For each notable moment:
-- What brain networks activate and what that means in plain language
-- What likely caused it (scene cut, speech, music, new visual, etc.)
-- Whether it represents strong engagement or a lull
+One short paragraph (3-4 sentences max): overall cognitive impact of this video. What does it primarily engage?
 
-## Peak Engagement Moments
-The top 3-5 moments where brain activation is highest. Explain what makes each moment work — \
-what the viewer's brain is doing and why that's good for engagement.
+## Timeline Overview
 
-## Engagement Drops
-Moments where activation falls. Explain what might be causing viewers to disengage and how to fix it.
+Give a CONCISE overview of the video's brain engagement arc, grouped by 20s segments. \
+For each segment, write a SHORT paragraph (3-5 sentences) covering:
+- The overall engagement level (high/medium/low)
+- The 2-3 most notable moments and what they triggered
+- Any significant shifts in brain activity
 
-## Brain Heatmap Interpretation
-Reference the attached brain images. Point out key patterns visible in the heatmaps — which areas \
-light up during the best moments vs. the weakest.
+DO NOT go second-by-second. Focus on the narrative arc and key transitions. \
+Use a brief timestamp range like "0:12–0:15" to anchor observations.
 
-## Actionable Recommendations
-5-7 specific, practical suggestions for future content based on the brain data. Be concrete \
-(e.g., "Add a visual scene change around the 35-second mark to re-engage the visual cortex" \
-not "Make your videos more engaging").
+## Top 3 Peak Moments
 
-Rules:
-- Use plain language throughout. If you must use a brain term, immediately explain it in parentheses.
-- Always reference specific timestamps (e.g., "at 0:12").
-- Focus on what's actionable for a content creator.
-- Be honest about limitations — this is a predictive model, not a real brain scan.\
+List EXACTLY 3 peak moments, numbered 1-3, each as:
+
+**1. [Timestamp] — [Short title]** (Activation: X.XX)
+
+[2-3 sentences: what the brain does here, why it works for engagement, what content element caused it]
+
+## Top 3 Engagement Drops
+
+List EXACTLY 3 drop moments, numbered 1-3, each as:
+
+**1. [Timestamp] — [Short title]** (Activation: X.XX)
+
+[2-3 sentences: what's happening in the brain, what likely caused the drop, how to fix it]
+
+## What to Change (Edit & Retest)
+
+The goal is to maximize cognitive engagement so the video has the best chance of going viral. \
+Viral content keeps brains firing on multiple networks simultaneously — especially attention, emotion, and default mode (personal connection).
+
+Structure this section as TWO parts:
+
+### Fix the Weak Spots
+
+For each engagement drop identified above, give ONE specific edit the creator can make to fix it. \
+Format as a numbered list matching the drops:
+
+1. **[Timestamp]**: [Specific edit — e.g., "Replace the static shot with a quick zoom-in or scene cut to re-trigger visual attention" or "Add a surprising sound effect here to spike the alertness network"]
+
+### Double Down on What Works
+
+For each peak moment, explain how to amplify or replicate that pattern elsewhere in the video:
+
+1. **[Timestamp]**: [Specific suggestion — e.g., "The emotional payoff here is strong. Build more tension in the 5 seconds before it to make the peak even higher" or "This hook pattern works — reuse it around 0:35 where engagement dips"]
+
+### General Virality Tips (Based on This Video's Brain Data)
+
+3-5 bullet points of broader patterns the creator should apply to future content. \
+Tie each tip to specific brain data from this video. Be concrete and actionable — \
+the creator will edit the video based on these suggestions and re-upload it to test again.
 """
 
 
@@ -134,6 +169,54 @@ def generate_report(
     return response.choices[0].message.content
 
 
+def _md_to_html(md: str) -> str:
+    """Convert markdown to HTML without external dependencies."""
+    html = md
+
+    # Headings (process longest prefix first)
+    for level in range(6, 0, -1):
+        pattern = re.compile(r"^" + "#" * level + r" (.+)$", re.MULTILINE)
+        html = pattern.sub(rf"<h{level}>\1</h{level}>", html)
+
+    # Bold
+    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
+
+    # Italic
+    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+
+    # Unordered lists: group consecutive lines starting with "- "
+    def _replace_ul(match):
+        items = re.findall(r"^- (.+)$", match.group(0), re.MULTILINE)
+        li = "".join(f"<li>{item}</li>\n" for item in items)
+        return f"<ul>\n{li}</ul>"
+    html = re.sub(r"(^- .+$\n?)+", _replace_ul, html, flags=re.MULTILINE)
+
+    # Ordered lists: group consecutive lines starting with "N. "
+    def _replace_ol(match):
+        items = re.findall(r"^\d+\. (.+)$", match.group(0), re.MULTILINE)
+        li = "".join(f"<li>{item}</li>\n" for item in items)
+        return f"<ol>\n{li}</ol>"
+    html = re.sub(r"(^\d+\. .+$\n?)+", _replace_ol, html, flags=re.MULTILINE)
+
+    # Horizontal rules
+    html = re.sub(r"^---+$", "<hr>", html, flags=re.MULTILINE)
+
+    # Wrap remaining plain text lines as paragraphs
+    lines = html.split("\n")
+    processed = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            processed.append("")
+        elif stripped.startswith("<"):
+            processed.append(line)
+        else:
+            processed.append(f"<p>{line}</p>")
+    html = "\n".join(processed)
+
+    return html
+
+
 def build_html_report(
     report_markdown: str,
     heatmap_paths: list[str],
@@ -149,51 +232,50 @@ def build_html_report(
     Returns:
         HTML string.
     """
-    # Embed images as base64
     def img_tag(path: str, caption: str) -> str:
         try:
             with open(path, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode("utf-8")
             return (
-                f'<figure style="display:inline-block;margin:8px;text-align:center">'
-                f'<img src="data:image/png;base64,{b64}" style="max-width:100%;border-radius:8px">'
-                f'<figcaption style="font-size:0.85em;color:#666">{caption}</figcaption>'
+                f'<figure>'
+                f'<img src="data:image/png;base64,{b64}">'
+                f'<figcaption>{caption}</figcaption>'
                 f'</figure>'
             )
         except FileNotFoundError:
             return ""
 
-    heatmap_html = "".join(
-        img_tag(p, f"Heatmap") for p in heatmap_paths
-    )
+    # Separate peak images from drop images by filename
+    peak_imgs = []
+    drop_imgs = []
+    for p in peak_paths:
+        fname = Path(p).name
+        if "drop" in fname:
+            drop_imgs.append(p)
+        else:
+            peak_imgs.append(p)
+
+    # Build heatmap gallery with timestamps from filenames
+    heatmap_html = ""
+    for p in heatmap_paths:
+        fname = Path(p).stem  # e.g. "heatmap_005.0s"
+        # Extract time from filename
+        time_match = re.search(r"(\d+\.?\d*)s", fname)
+        if time_match:
+            secs = float(time_match.group(1))
+            label = f"{int(secs // 60)}:{int(secs % 60):02d}"
+        else:
+            label = "Heatmap"
+        heatmap_html += img_tag(p, label)
+
     peak_html = "".join(
-        img_tag(p, f"Peak/Drop") for p in peak_paths
+        img_tag(p, f"Peak {i + 1}") for i, p in enumerate(peak_imgs)
+    )
+    drop_html = "".join(
+        img_tag(p, f"Drop {i + 1}") for i, p in enumerate(drop_imgs)
     )
 
-    # Convert markdown to HTML (basic conversion — avoid extra dependencies)
-    # Gradio renders markdown natively, but for the download we do simple conversion
-    report_html = report_markdown
-    for level in range(6, 0, -1):
-        prefix = "#" * level
-        report_html = report_html.replace(
-            f"\n{prefix} ", f"\n<h{level}>"
-        ).replace(f"\n<h{level}>", f"\n<h{level}>")
-    # Wrap paragraphs
-    lines = report_html.split("\n")
-    processed = []
-    for line in lines:
-        if line.startswith("<h"):
-            # Close heading tag
-            for level in range(1, 7):
-                if line.startswith(f"<h{level}>"):
-                    line = line + f"</h{level}>"
-                    break
-            processed.append(line)
-        elif line.strip() == "":
-            processed.append("")
-        else:
-            processed.append(f"<p>{line}</p>")
-    report_html = "\n".join(processed)
+    report_html = _md_to_html(report_markdown)
 
     return f"""\
 <!DOCTYPE html>
@@ -203,17 +285,45 @@ def build_html_report(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TRIBE Analyzer Report</title>
 <style>
+    * {{ box-sizing: border-box; }}
     body {{
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        max-width: 900px;
+        max-width: 960px;
         margin: 0 auto;
         padding: 2rem;
-        line-height: 1.6;
+        line-height: 1.7;
         color: #1a1a1a;
         background: #fafafa;
     }}
-    h1 {{ color: #2d3748; border-bottom: 3px solid #e53e3e; padding-bottom: 0.5rem; }}
-    h2 {{ color: #4a5568; margin-top: 2rem; }}
+    h1 {{
+        color: #2d3748;
+        border-bottom: 3px solid #e53e3e;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }}
+    h2 {{
+        color: #2d3748;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid #e2e8f0;
+    }}
+    h3 {{
+        color: #4a5568;
+        margin-top: 1.5rem;
+    }}
+    p {{ margin: 0.6rem 0; }}
+    strong {{ color: #2d3748; }}
+    ul, ol {{
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }}
+    li {{ margin: 0.3rem 0; }}
+    hr {{
+        border: none;
+        border-top: 1px solid #e2e8f0;
+        margin: 2rem 0;
+    }}
     .images-section {{
         display: flex;
         flex-wrap: wrap;
@@ -221,30 +331,73 @@ def build_html_report(
         margin: 1rem 0;
         justify-content: center;
     }}
-    figure {{ background: white; padding: 8px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-    p {{ margin: 0.5rem 0; }}
+    figure {{
+        display: inline-block;
+        margin: 8px;
+        text-align: center;
+        background: white;
+        padding: 8px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }}
+    figure img {{
+        max-width: 100%;
+        border-radius: 8px;
+    }}
+    figcaption {{
+        font-size: 0.85em;
+        color: #666;
+        margin-top: 4px;
+        font-weight: 500;
+    }}
+    .section-label {{
+        font-size: 0.9em;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 1.5rem 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }}
+    .peak-label {{ color: #38a169; }}
+    .drop-label {{ color: #e53e3e; }}
+    .report-body h2 {{ border-left: 4px solid #4299e1; padding-left: 0.75rem; border-bottom: none; }}
+    .footer {{
+        font-size: 0.8em;
+        color: #999;
+        margin-top: 3rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }}
     @media print {{
-        body {{ background: white; }}
+        body {{ background: white; padding: 1rem; }}
         figure {{ box-shadow: none; border: 1px solid #ddd; }}
     }}
 </style>
 </head>
 <body>
+
 <h1>TRIBE Analyzer — Brain Response Report</h1>
 
-<h2>Brain Activity Heatmaps (5-second intervals)</h2>
+<h2>Brain Activity Heatmaps</h2>
+<p style="color:#666;font-size:0.9em">Cortical surface plots at 5-second intervals. Warmer colors = stronger activation.</p>
 <div class="images-section">{heatmap_html}</div>
 
-<h2>Peak &amp; Drop Moments</h2>
+<h2>Peak Engagement Moments</h2>
 <div class="images-section">{peak_html}</div>
 
-<hr>
-{report_html}
+<h2>Engagement Drops</h2>
+<div class="images-section">{drop_html}</div>
 
 <hr>
-<p style="font-size:0.8em;color:#999;margin-top:2rem">
+
+<div class="report-body">
+{report_html}
+</div>
+
+<div class="footer">
 Generated by TRIBE Analyzer using Meta TRIBE v2 brain encoding model.
 Brain predictions are model-based estimates, not real fMRI scans.
-</p>
+</div>
+
 </body>
 </html>"""
