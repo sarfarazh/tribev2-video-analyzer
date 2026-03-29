@@ -100,12 +100,34 @@ the creator will edit the video based on these suggestions and re-upload it to t
 """
 
 
+INPUT_TYPE_CONTEXT = {
+    "video": (
+        "Here is the brain activation data for my video:\n\n"
+    ),
+    "audio": (
+        "This analysis is based on audio only (a voiceover recording). "
+        "Visual network data reflects imagined/default neural responses to auditory stimuli, "
+        "not actual visual content. Focus your analysis on how the voice, tone, pacing, "
+        "music, and sound design affect the brain.\n\n"
+        "Here is the brain activation data for my voiceover:\n\n"
+    ),
+    "text": (
+        "This analysis is based on a text script that was converted to speech internally. "
+        "Visual network data is absent — activations come from language processing only. "
+        "Focus your analysis on how the script's narrative structure, word choice, pacing, "
+        "and emotional arc affect the brain.\n\n"
+        "Here is the brain activation data for my script:\n\n"
+    ),
+}
+
+
 def generate_report(
     api_key: str,
     summary: dict,
     heatmap_paths: list[str],
     peak_paths: list[str],
     model: str = "anthropic/claude-opus-4-6",
+    input_type: str = "video",
 ) -> str:
     """Generate a layman-friendly report using an LLM via OpenRouter."""
     client = OpenAI(
@@ -113,11 +135,13 @@ def generate_report(
         api_key=api_key,
     )
 
+    context_prefix = INPUT_TYPE_CONTEXT.get(input_type, INPUT_TYPE_CONTEXT["video"])
+
     content = [
         {
             "type": "text",
             "text": (
-                "Here is the brain activation data for my video:\n\n"
+                context_prefix
                 f"```json\n{json.dumps(summary, indent=2)}\n```\n\n"
                 "The following images show brain surface heatmaps at 5-second intervals "
                 "and at peak/drop moments. Warmer colors (red/yellow) = stronger activation."

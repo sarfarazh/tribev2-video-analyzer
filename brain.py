@@ -53,11 +53,15 @@ def get_atlas_plotter() -> PlotBrain:
     return _atlas_plotter
 
 
-def process_segment(segment_path: str) -> dict:
-    """Run TRIBE v2 on a single video segment.
+def process_segment(
+    segment_path: str,
+    input_type: str = "video",
+) -> dict:
+    """Run TRIBE v2 on a single segment.
 
     Args:
-        segment_path: Path to the video segment file.
+        segment_path: Path to the video, audio, or text file.
+        input_type: One of "video", "audio", or "text".
 
     Returns:
         Dict with keys:
@@ -66,7 +70,16 @@ def process_segment(segment_path: str) -> dict:
             - events: pd.DataFrame of extracted events
     """
     model = get_model()
-    events = model.get_events_dataframe(video_path=str(segment_path))
+
+    if input_type == "video":
+        events = model.get_events_dataframe(video_path=str(segment_path))
+    elif input_type == "audio":
+        events = model.get_events_dataframe(audio_path=str(segment_path))
+    elif input_type == "text":
+        events = model.get_events_dataframe(text_path=str(segment_path))
+    else:
+        raise ValueError(f"Unknown input_type: {input_type}")
+
     preds, segments = model.predict(events=events)
 
     return {
