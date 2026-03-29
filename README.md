@@ -73,14 +73,16 @@ By default the server listens on **0.0.0.0:7860** and Gradio **`share=True`** is
 | `report.py` | OpenRouter multimodal call, markdown report, HTML export. |
 | `requirements.txt` | Python dependencies. |
 | `docs/PLAN.md` | Design and implementation plan. |
-| `docs/RUNPOD_SETUP.md` | Step-by-step RunPod GPU setup, ports, troubleshooting. |
+| `docs/RUNPOD_SETUP.md` | Step-by-step RunPod GPU setup, ports, costs. |
+| `docs/TROUBLESHOOTING.md` | Solutions for common errors (PyTorch/Blackwell, hf_transfer, NVRTC, etc.). |
 
 ---
 
 ## Further documentation
 
 - **[facebookresearch/tribev2](https://github.com/facebookresearch/tribev2)** — upstream TRIBE v2 code, paper link, and Colab demo.
-- **[docs/RUNPOD_SETUP.md](docs/RUNPOD_SETUP.md)** — GPU pod creation, disk size, port **7860**, HF login, costs, and common errors.
+- **[docs/RUNPOD_SETUP.md](docs/RUNPOD_SETUP.md)** — GPU pod creation, disk size, port **7860**, HF login, and costs.
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** — Solutions for PyTorch + Blackwell GPU issues, hf_transfer, CUDA NVRTC, version conflicts, and more.
 - **[docs/PLAN.md](docs/PLAN.md)** — Architecture, data flow, and UI design notes.
 
 ---

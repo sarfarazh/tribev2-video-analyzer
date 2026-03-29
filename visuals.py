@@ -176,9 +176,20 @@ def generate_segment_gif(
         frame = render_single_timestep(plotter, preds, segments, t)
         frames.append(frame)
 
+    # Resize all frames to match the first frame's dimensions
+    target_shape = frames[0].shape
+    resized = []
+    for frame in frames:
+        if frame.shape != target_shape:
+            from PIL import Image
+            img = Image.fromarray(frame)
+            img = img.resize((target_shape[1], target_shape[0]), Image.LANCZOS)
+            frame = np.array(img)
+        resized.append(frame)
+
     iio.imwrite(
         output_path,
-        frames,
+        resized,
         extension=".gif",
         duration=int(1000 / fps),
         loop=0,

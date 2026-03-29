@@ -112,26 +112,11 @@ If you exposed port 7860, go to your pod's **Connect** tab and click the **7860*
 
 ## 8. Troubleshooting
 
-### Out of Memory (OOM)
-Shouldn't happen on 48 GB, but if it does:
-- Check no other processes are using the GPU: `nvidia-smi`
-- Restart the pod to clear GPU memory
+See the full [Troubleshooting Guide](TROUBLESHOOTING.md) for solutions to common issues including:
 
-### ffmpeg segment errors
-If video splitting fails:
-- Ensure the video is a standard format (.mp4, .mov, .webm)
-- Re-encode first: `ffmpeg -i input.mp4 -c:v libx264 -c:a aac output.mp4`
-
-### OpenRouter errors
-- Verify your API key is valid at https://openrouter.ai/keys
-- Check you have credits/balance on OpenRouter
-- The model ID is `anthropic/claude-opus-4-6` — ensure it's available on your plan
-
-### Gradio "connection refused"
-- Make sure the app is running (`python app.py`)
-- If using RunPod proxy, confirm port 7860 is exposed in pod settings
-- Use the `share=True` public link as a fallback (enabled by default)
-
-### Model download hangs
-- Check internet connectivity from the pod: `curl -I https://huggingface.co`
-- Re-run `huggingface-cli login` if your token expired
+- PyTorch + Blackwell GPU incompatibility (sm_120)
+- hf_transfer not found (whisperx / uv environment)
+- CUDA NVRTC errors
+- torchvision / torchaudio version conflicts
+- huggingface-cli not found
+- OOM, ffmpeg, OpenRouter, and Gradio connection issues
