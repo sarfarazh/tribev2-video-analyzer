@@ -17,7 +17,8 @@ pip install neuralset neuraltrain x_transformers einops mne mne_bids nilearn pyv
     seaborn scipy scikit-image pydantic tqdm
 
 echo "=== Ensuring PyTorch with Blackwell (sm_120) support ==="
-pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+pip uninstall -y torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126
 
 echo "=== Installing Chatterbox TTS (requires numpy + torch) ==="
 pip install chatterbox-tts
