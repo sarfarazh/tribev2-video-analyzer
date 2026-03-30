@@ -30,7 +30,7 @@ pip install chatterbox-tts
 
 echo "=== Installing PyTorch with Blackwell (sm_120) support ==="
 echo "    (installed last to prevent other packages from downgrading)"
-pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
 
 echo ""
 echo "=== HuggingFace Login ==="
