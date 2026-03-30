@@ -135,7 +135,7 @@ def text_to_speech(text: str) -> Path:
         Path to the generated WAV file.
     """
     from chatterbox.tts_turbo import ChatterboxTurboTTS
-    import torchaudio as ta
+    import soundfile as sf
 
     logger.info("Loading Chatterbox TTS Turbo model...")
     model = ChatterboxTurboTTS.from_pretrained(device="cuda")
@@ -144,7 +144,7 @@ def text_to_speech(text: str) -> Path:
     wav = model.generate(text)
 
     out_path = Path(tempfile.mkdtemp(prefix="tribe_tts_")) / "speech.wav"
-    ta.save(str(out_path), wav, model.sr)
+    sf.write(str(out_path), wav.squeeze().cpu().numpy(), model.sr)
     logger.info(f"TTS output saved to {out_path}")
 
     return out_path
