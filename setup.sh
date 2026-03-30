@@ -7,7 +7,7 @@ set -e
 VENV_DIR="${HOME}/.venv/tribe"
 
 echo "=== Creating virtual environment ==="
-python -m venv "$VENV_DIR" --system-site-packages=false
+python -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
 echo "=== Installing PyTorch with Blackwell (sm_120) support ==="
