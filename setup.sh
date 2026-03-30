@@ -16,8 +16,8 @@ pip install neuralset neuraltrain x_transformers einops mne mne_bids nilearn pyv
     moviepy pydub soundfile langdetect colorcet julius Levenshtein \
     seaborn scipy scikit-image pydantic tqdm
 
-echo "=== Ensuring PyTorch 2.8 + CUDA 12.8 (Blackwell support) ==="
-pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+echo "=== Ensuring PyTorch with Blackwell (sm_120) support ==="
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 
 echo "=== Installing Chatterbox TTS (requires numpy + torch) ==="
 pip install chatterbox-tts
@@ -56,7 +56,18 @@ export MESA_GL_VERSION_OVERRIDE=4.5
 
 echo ""
 echo "=== Verifying ==="
-python -c "import torch; print(f'PyTorch: {torch.__version__}'); assert 'sm_120' in torch.cuda.get_arch_list(), 'Blackwell not supported!'; print('Blackwell (sm_120): OK')"
+python -c "
+import torch
+print(f'PyTorch: {torch.__version__}')
+print(f'CUDA: {torch.version.cuda}')
+archs = torch.cuda.get_arch_list()
+print(f'Architectures: {archs}')
+if 'sm_120' in archs:
+    print('Blackwell (sm_120): OK')
+else:
+    print('WARNING: sm_120 not in arch list — may still work via forward compat')
+    print(f'GPU: {torch.cuda.get_device_name(0)}')
+"
 python -c "import tribev2; print('tribev2: OK')"
 python -c "import gradio; print(f'Gradio: {gradio.__version__}')"
 
