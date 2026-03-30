@@ -351,12 +351,46 @@ def list_analysis_files(analysis_dir: Path) -> dict:
     pdf_path = analysis_dir / "report.pdf"
     zip_path = analysis_dir / "tribe_analysis.zip"
 
+    # Timeline chart
+    timeline_path = analysis_dir / "network_timeline.png"
+
     return {
         "mp4_paths": mp4_paths,
         "heatmap_gallery": heatmap_gallery,
         "peak_gallery": peak_gallery,
+        "timeline_path": str(timeline_path) if timeline_path.exists() else None,
         "report_markdown": report_md or "",
         "html_path": str(html_path) if html_path.exists() else None,
         "pdf_path": str(pdf_path) if pdf_path.exists() else None,
         "zip_path": str(zip_path) if zip_path.exists() else None,
     }
+
+
+def load_analysis_metadata(analysis_id: str) -> dict | None:
+    """Load metadata.json for a given analysis ID."""
+    meta_path = RESULTS_DIR / analysis_id / "metadata.json"
+    if not meta_path.exists():
+        return None
+    with open(meta_path) as f:
+        return json.load(f)
+
+
+def load_all_segment_derived(analysis_dir: Path) -> tuple[list, list] | None:
+    """Load all segment derived data (network_activations and peaks_drops).
+
+    Returns:
+        Tuple of (all_network_activations, all_peaks_drops) or None if incomplete.
+    """
+    all_na = []
+    all_pd = []
+    i = 0
+    while True:
+        derived = load_segment_derived(analysis_dir, i)
+        if derived is None:
+            break
+        all_na.append(derived["network_activations"])
+        all_pd.append(derived["peaks_drops"])
+        i += 1
+    if not all_na:
+        return None
+    return all_na, all_pd

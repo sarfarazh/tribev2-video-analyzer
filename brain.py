@@ -60,8 +60,8 @@ def process_segment(
     """Run TRIBE v2 on a single segment.
 
     Args:
-        segment_path: Path to the video, audio, or text file.
-        input_type: One of "video", "audio", or "text".
+        segment_path: Path to the video or audio file.
+        input_type: One of "video" or "audio".
 
     Returns:
         Dict with keys:
@@ -75,8 +75,6 @@ def process_segment(
         events = model.get_events_dataframe(video_path=str(segment_path))
     elif input_type == "audio":
         events = model.get_events_dataframe(audio_path=str(segment_path))
-    elif input_type == "text":
-        events = model.get_events_dataframe(text_path=str(segment_path))
     else:
         raise ValueError(f"Unknown input_type: {input_type}")
 

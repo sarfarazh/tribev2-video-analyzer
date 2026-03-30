@@ -1,8 +1,11 @@
-"""Video/audio splitting and text file utilities using ffmpeg."""
+"""Video/audio splitting and TTS utilities using ffmpeg."""
 
+import logging
 import subprocess
 import tempfile
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def get_media_duration(media_path: str | Path) -> float:
@@ -125,8 +128,23 @@ def split_audio(audio_path: str | Path, segment_duration: int = 20) -> list[dict
     return segments
 
 
-def text_to_file(text: str) -> Path:
-    """Save text to a temporary .txt file for TRIBE v2 processing."""
-    tmp = Path(tempfile.mkdtemp(prefix="tribe_text_")) / "input.txt"
-    tmp.write_text(text)
-    return tmp
+def text_to_speech(text: str) -> Path:
+    """Convert text to speech using Chatterbox TTS Turbo.
+
+    Returns:
+        Path to the generated WAV file.
+    """
+    from chatterbox.tts_turbo import ChatterboxTurboTTS
+    import torchaudio as ta
+
+    logger.info("Loading Chatterbox TTS Turbo model...")
+    model = ChatterboxTurboTTS.from_pretrained(device="cuda")
+
+    logger.info(f"Generating speech for {len(text)} characters...")
+    wav = model.generate(text)
+
+    out_path = Path(tempfile.mkdtemp(prefix="tribe_tts_")) / "speech.wav"
+    ta.save(str(out_path), wav, model.sr)
+    logger.info(f"TTS output saved to {out_path}")
+
+    return out_path

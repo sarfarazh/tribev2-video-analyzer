@@ -111,9 +111,9 @@ INPUT_TYPE_CONTEXT = {
         "music, and sound design affect the brain.\n\n"
         "Here is the brain activation data for my voiceover:\n\n"
     ),
-    "text": (
-        "This analysis is based on a text script that was converted to speech internally. "
-        "Visual network data is absent — activations come from language processing only. "
+    "script": (
+        "This analysis is based on a text script that was converted to speech using "
+        "Chatterbox TTS. The brain responses are predicted from the synthesized audio. "
         "Focus your analysis on how the script's narrative structure, word choice, pacing, "
         "and emotional arc affect the brain.\n\n"
         "Here is the brain activation data for my script:\n\n"
@@ -128,6 +128,7 @@ def generate_report(
     peak_paths: list[str],
     model: str = "anthropic/claude-opus-4-6",
     input_type: str = "video",
+    timeline_path: str | None = None,
 ) -> str:
     """Generate a layman-friendly report using an LLM via OpenRouter."""
     client = OpenAI(
@@ -148,6 +149,23 @@ def generate_report(
             ),
         },
     ]
+
+    # Include timeline chart if available
+    if timeline_path:
+        try:
+            with open(timeline_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("utf-8")
+            content.append({
+                "type": "text",
+                "text": "This line chart shows all 7 brain networks plotted over time. "
+                        "Peaks are marked with red triangles, drops with blue triangles.",
+            })
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{b64}"},
+            })
+        except FileNotFoundError:
+            pass
 
     all_images = [
         (p, "5-second interval heatmap") for p in heatmap_paths
@@ -237,6 +255,7 @@ def build_html_report(
     heatmap_paths: list[str],
     peak_paths: list[str],
     gif_paths: list[str] | None = None,
+    timeline_path: str | None = None,
 ) -> str:
     """Build a standalone HTML report with embedded images and GIFs."""
 
@@ -300,6 +319,18 @@ def build_html_report(
                 end = start + 20
                 label = f"Segment {i + 1} ({int(start // 60)}:{start % 60:02d}–{int(end // 60)}:{end % 60:02d})"
                 gif_html += gif_tag(gp, label)
+
+    # Timeline chart
+    timeline_html = ""
+    if timeline_path:
+        uri = _embed_file_b64(timeline_path, "image/png")
+        if uri:
+            timeline_html = (
+                f'<figure style="max-width:100%;margin:1rem auto;">'
+                f'<img src="{uri}" style="width:100%;border-radius:8px;">'
+                f'<figcaption>All 7 brain networks over time. Red triangles = peaks, blue triangles = drops.</figcaption>'
+                f'</figure>'
+            )
 
     report_html = _md_to_html(report_markdown)
 
@@ -407,6 +438,8 @@ def build_html_report(
 
 {"<h2>Brain Activity Animations</h2>" + '<div class="gif-section">' + gif_html + "</div>" if gif_html else ""}
 
+{"<h2>Network Timeline</h2>" + timeline_html if timeline_html else ""}
+
 <h2>Brain Activity Heatmaps</h2>
 <p style="color:#666;font-size:0.9em">Cortical surface plots at 5-second intervals. Warmer colors = stronger activation.</p>
 <div class="images-section">{heatmap_html}</div>
@@ -462,6 +495,7 @@ def build_zip_package(
     gif_paths: list[str] | None = None,
     heatmap_paths: list[str] | None = None,
     peak_paths: list[str] | None = None,
+    timeline_path: str | None = None,
 ) -> str:
     """Build an organized ZIP file with all analysis outputs.
 
@@ -507,6 +541,9 @@ def build_zip_package(
             for p in peak_paths:
                 fname = Path(p).name
                 zf.write(p, f"tribe_analysis/peaks/{fname}")
+
+        if timeline_path:
+            zf.write(timeline_path, "tribe_analysis/network_timeline.png")
 
     logger.info(f"ZIP package saved to {output_path}")
     return str(output_path)

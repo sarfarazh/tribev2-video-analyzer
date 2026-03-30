@@ -43,6 +43,17 @@ YEO_7_NETWORKS = {
 }
 
 
+NETWORK_COLORS = {
+    "visual": "#1f77b4",
+    "somatomotor": "#ff7f0e",
+    "dorsal_attention": "#2ca02c",
+    "ventral_attention": "#d62728",
+    "limbic": "#9467bd",
+    "frontoparietal": "#8c564b",
+    "default_mode": "#e377c2",
+}
+
+
 def classify_region(region_label: str) -> str | None:
     """Map a Schaefer atlas region label to a functional network name.
 

@@ -13,7 +13,7 @@ pip install gradio>=4.0 openai>=1.0 numpy pandas matplotlib "imageio[ffmpeg]" we
 echo "=== Installing tribev2 sub-dependencies (excluding torch/torchvision) ==="
 pip install neuralset neuraltrain x_transformers einops mne mne_bids nilearn pyvista nibabel \
     safetensors transformers huggingface_hub spacy polars submitit exca confection \
-    moviepy pydub soundfile gtts langdetect colorcet julius Levenshtein \
+    moviepy pydub soundfile chatterbox-tts langdetect colorcet julius Levenshtein \
     seaborn scipy scikit-image pydantic tqdm
 
 echo "=== Ensuring PyTorch 2.8 + CUDA 12.8 (Blackwell support) ==="
