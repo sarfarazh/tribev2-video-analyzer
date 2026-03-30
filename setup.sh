@@ -10,8 +10,8 @@ echo "=== Creating virtual environment ==="
 python -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
-echo "=== Installing PyTorch with Blackwell (sm_120) support ==="
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126
+echo "=== Installing system dependencies ==="
+apt-get update && apt-get install -y libosmesa6-dev libgl1-mesa-dev ffmpeg
 
 echo "=== Installing tribev2 (without dependency overrides) ==="
 pip install --no-deps "tribev2[plotting] @ git+https://github.com/facebookresearch/tribev2.git"
@@ -28,8 +28,9 @@ pip install neuralset neuraltrain x_transformers einops mne mne_bids nilearn pyv
 echo "=== Installing Chatterbox TTS ==="
 pip install chatterbox-tts
 
-echo "=== Installing system dependencies ==="
-apt-get update && apt-get install -y libosmesa6-dev libgl1-mesa-dev ffmpeg
+echo "=== Installing PyTorch with Blackwell (sm_120) support ==="
+echo "    (installed last to prevent other packages from downgrading)"
+pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126
 
 echo ""
 echo "=== HuggingFace Login ==="
